@@ -1,0 +1,118 @@
+
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import { HeartPulse } from 'lucide-react';
+
+const thresholds = {
+  pressure: { normal: [90, 120], warning: [121, 139], danger: [140, 200] },
+  sugar: { fasting: [70, 99], postMeal: [100, 180], danger: [181, 300] },
+  heartRate: { normal: [60, 100], warning: [101, 120], danger: [121, 200] }
+};
+
+export default function NabdApp() {
+  const [data, setData] = useState([]);
+  const [bp, setBp] = useState('');
+  const [sugar, setSugar] = useState('');
+  const [hr, setHr] = useState('');
+  const [message, setMessage] = useState('');
+
+  useEffect(() => {
+    const reminder = setInterval(() => {
+      alert('📌 من فضلك قم بإدخال بياناتك الصحية اليومية.');
+    }, 86400000);
+    return () => clearInterval(reminder);
+  }, []);
+
+  const analyze = () => {
+    const [systolic, diastolic] = bp.split('/').map(Number);
+    const sugarVal = Number(sugar);
+    const hrVal = Number(hr);
+    let msg = '';
+
+    if (systolic > 160 || diastolic > 100) {
+      msg += '⚠️ الضغط مرتفع جدًا، يُفضل الراحة فورًا وشرب ماء. إذا استمر الوضع راجع الطبيب.\n';
+    } else if (systolic > 140 || diastolic > 90) {
+      msg += 'الضغط مرتفع قليلاً، حاول تقليل التوتر.\n';
+    }
+
+    if (sugarVal > 180) {
+      msg += '⚠️ نسبة السكر مرتفعة، يُفضل المشي ومتابعة القياس.\n';
+    } else if (sugarVal > 140) {
+      msg += 'السكر مرتفع قليلاً بعد الأكل، راقب نظامك الغذائي.\n';
+    }
+
+    if (hrVal > 120) {
+      msg += '⚠️ معدل نبض القلب مرتفع جدًا، استرح فورًا.\n';
+    } else if (hrVal > 100) {
+      msg += 'معدل نبضك أعلى من الطبيعي، حاول التنفس بعمق.\n';
+    }
+
+    if (!msg) msg = '✅ قراءاتك في المعدل الطبيعي. استمر هكذا!';
+
+    setMessage(msg);
+    setData(prev => [...prev, {
+      date: new Date().toLocaleString('ar-EG'),
+      bp, sugar: sugarVal, hr: hrVal
+    }]);
+    setBp(''); setSugar(''); setHr('');
+  };
+
+  return (
+    <div className="max-w-md mx-auto p-4 font-sans text-right rtl bg-white min-h-screen">
+      <header className="text-center mb-6">
+        <div className="flex items-center justify-center gap-2">
+          <div className="bg-teal-500 text-white rounded-full p-2 shadow-md">
+            <HeartPulse className="w-6 h-6" />
+          </div>
+          <h1 className="text-4xl font-bold text-blue-700">نبض</h1>
+        </div>
+        <p className="text-gray-600 mt-1">مساعدك الذكي لمتابعة صحتك</p>
+      </header>
+
+      <Card className="mb-6 shadow-lg border border-gray-200">
+        <CardContent className="space-y-4">
+          <div>
+            <label className="block mb-1 text-sm font-medium text-gray-700">ضغط الدم (مثال: 120/80)</label>
+            <Input value={bp} onChange={e => setBp(e.target.value)} placeholder="مثلاً: 120/80" dir="ltr" className="bg-gray-50" />
+          </div>
+
+          <div>
+            <label className="block mb-1 text-sm font-medium text-gray-700">نسبة السكر</label>
+            <Input type="number" value={sugar} onChange={e => setSugar(e.target.value)} placeholder="مثلاً: 150" className="bg-gray-50" />
+          </div>
+
+          <div>
+            <label className="block mb-1 text-sm font-medium text-gray-700">معدل نبض القلب</label>
+            <Input type="number" value={hr} onChange={e => setHr(e.target.value)} placeholder="مثلاً: 85" className="bg-gray-50" />
+          </div>
+
+          <Button onClick={analyze} className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-xl text-lg">تحليل البيانات</Button>
+        </CardContent>
+      </Card>
+
+      {message && (
+        <div className="bg-green-50 p-4 rounded-xl border border-green-400 text-green-800 whitespace-pre-line shadow">
+          {message}
+        </div>
+      )}
+
+      <Card className="mt-8 border border-gray-200 shadow-sm">
+        <CardContent>
+          <h2 className="text-xl font-bold mb-4 text-blue-800">📊 السجل الصحي</h2>
+          <ResponsiveContainer width="100%" height={200}>
+            <LineChart data={data}>
+              <XAxis dataKey="date" hide />
+              <YAxis />
+              <Tooltip />
+              <Line type="monotone" dataKey="sugar" stroke="#e53e3e" name="السكر" />
+              <Line type="monotone" dataKey="hr" stroke="#3182ce" name="النبض" />
+            </LineChart>
+          </ResponsiveContainer>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
